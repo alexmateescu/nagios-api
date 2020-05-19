@@ -568,6 +568,53 @@ def http_schedule_hostgroup_downtime(req, objid, reqobj):
             return json_error(req, 'Failed sending command to Nagios.')
     return json_response(req, 'scheduled')
 
+def http_schedule_servicegroup_downtime(req, objid, reqobj):
+    '''Given a hostgroup, schedule downtime for all the hosts in the hostgroup.
+    The main mode for this API is to schedule a hard downtime that starts now and ends
+    after so many seconds.
+
+    If you specify the hostgroup parameter and also set 'services_too' to
+    true, we will schedule downtime for the all the hosts and the services on it.
+
+    '''
+    global NAGIOS, CMD_ENABLED
+    if not CMD_ENABLED:
+        return json_error(req, 'External commands not enabled on nagios-api.')
+    if objid is not None:
+        return json_error(req, 'Unexpected object ID.')
+
+    now = int(time.time())
+
+    servicegroup = reqobj.get('servicegroup')
+    services_too = reqobj.get('services_too', False)
+    author = reqobj.get('author', 'nagios-api')
+    comment = reqobj.get('comment', 'schedule downtime')
+    start_time = reqobj.get('start_time', now)
+    fixed = reqobj.get('fixed', 1)
+    try:
+        dur = int(reqobj.get('duration', 0))
+    except ValueError:
+        dur = 0
+    end_time = reqobj.get('end_time', start_time + dur)
+
+    if hostgroup is None:
+        return json_error(req, 'Servicegroup not specified.')
+    if fixed == 1:
+        # duration is unused by Nagios for fixed downtime
+        dur = 0
+    else: # flexible downtime
+        # The Nagios C code defines duration as an unsigned long
+        if dur < 1 or dur > 4294967295:
+            return json_error(req, 'Flexible dowtime duration must be between 1 and 4,294,967,295 seconds')
+
+    if not send_nagios_command('SCHEDULE_SERVICEGROUP_HOST_DOWNTIME', servicegroup, start_time,
+                                end_time, fixed, 0, dur, author, comment):
+        return json_error(req, 'Failed sending command to Nagios.')
+    if services_too:
+        if not send_nagios_command('SCHEDULE_SERVICEGROUP_SVC_DOWNTIME', servicegroup, start_time, end_time,
+                                    fixed, 0, dur, author, comment):
+            return json_error(req, 'Failed sending command to Nagios.')
+    return json_response(req, 'scheduled')
 
 
 def http_submit_result(req, objid, reqobj):
