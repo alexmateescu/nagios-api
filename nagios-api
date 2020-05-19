@@ -1000,6 +1000,7 @@ def http_handler(req):
             'cancel_downtime': http_cancel_downtime,
             'schedule_downtime': http_schedule_downtime,
             'schedule_hostgroup_downtime': http_schedule_hostgroup_downtime,
+            'schedule_servicegroup_downtime': http_schedule_servicegroup_downtime,
             'disable_notifications': http_disable_notifications,
             'enable_notifications': http_enable_notifications,
             'disable_checks': http_disable_checks,
