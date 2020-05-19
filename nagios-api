@@ -597,7 +597,7 @@ def http_schedule_servicegroup_downtime(req, objid, reqobj):
         dur = 0
     end_time = reqobj.get('end_time', start_time + dur)
 
-    if hostgroup is None:
+    if servicegroup is None:
         return json_error(req, 'Servicegroup not specified.')
     if fixed == 1:
         # duration is unused by Nagios for fixed downtime
